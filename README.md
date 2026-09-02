@@ -11,6 +11,11 @@ mainnet blocks** from taproot activation (block 709,656, November 2021) to
 block 965,089 (September 2026). No sampling. Sources: a Bitcoin Core v31 node
 and a production BlindBit Oracle v2, both queried locally.
 
+**New (2 Sep 2026):** these numbers now feed a converged spec attempt:
+[LIGHT-CLIENT-PROTOCOL-DRAFT.md](./LIGHT-CLIENT-PROTOCOL-DRAFT.md), a pre-draft
+that merges the two existing spec efforts with what actually shipped. Disagreement
+welcome, that is what it is for.
+
 ## Results in one table
 
 | what the wallet downloads | whole range | average per block | per day, following the chain* |
