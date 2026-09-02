@@ -2,9 +2,9 @@
 
 **The question:** a phone wallet cannot scan the blockchain itself, so it
 downloads per-block "scanning data" from a server to discover incoming
-BIP-352 silent payments. Three designs exist for that data. Until now, nobody
-had measured what any of them actually costs. The developer discussion that
-needed these numbers stalled in June 2024 waiting for them.
+[BIP-352 silent payments](https://bips.dev/352/). Three designs exist for that data. Until now, nobody
+had measured what any of them actually costs. The [developer discussion](https://delvingbitcoin.org/t/silent-payments-light-client-protocol/891)
+that needed these numbers stalled in June 2024 waiting for them.
 
 **What we did:** measured all three designs across **every one of the 255,434
 mainnet blocks** from taproot activation (block 709,656, November 2021) to
@@ -15,9 +15,9 @@ and a production BlindBit Oracle v2, both queried locally.
 
 | what the wallet downloads | whole range | average per block | per day, following the chain* |
 |---|---|---|---|
-| stock BIP-158 filter (what light wallets use today) | 5.78 GB | 22.6 KB | 2.8 MB |
-| taproot-only filter (proposed 2024, never built)** | 0.94 GB | 3.7 KB | 0.4 MB |
-| complete scanning payload (BlindBit v2, what ships) | 15.08 GB | 59.0 KB | 8.0 MB |
+| stock [BIP-158](https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki) filter (what light wallets use today) | 5.78 GB | 22.6 KB | 2.8 MB |
+| taproot-only filter ([proposed 2024](https://github.com/setavenger/BIP0352-light-client-specification), never built)** | 0.94 GB | 3.7 KB | 0.4 MB |
+| complete scanning payload ([BlindBit v2](https://github.com/setavenger/blindbit-oracle), what ships) | 15.08 GB | 59.0 KB | 8.0 MB |
 
 \* 144 blocks/day at recent-era (blocks 900k-965k) averages.
 \*\* Estimated from exact per-block item counts; the size formula was validated
@@ -61,5 +61,5 @@ For scale: even the heaviest option is 8 MB per day on a phone.
   blockfilterindex plus a BlindBit v2 oracle; loopback only).
 
 Data: CC0. Scripts: MIT. From the operators of https://silentpayments.net,
-where the index behind these numbers publishes tamper-evident fingerprints of
-everything it serves.
+where the index behind these numbers publishes [tamper-evident fingerprints](https://njump.me/npub1wc5were3y63h4nwcckdrw72gceh4kgz8eg7fz0zrk2xufr4dx9xqlvmcx8)
+of everything it serves; plain-language story [here](https://bitsaga.be/insights/the-server-that-can-be-caught-lying).
