@@ -60,6 +60,11 @@ For scale: even the heaviest option is 8 MB per day on a phone.
   `summarize.py`: reproduce everything (needs a Core node with
   blockfilterindex plus a BlindBit v2 oracle; loopback only).
 
+Also here: `SPCOMMIT.md`, the normative format for the per-block index
+commitments the server publishes (the tamper-evident fingerprints), and
+`spcommit-test-vectors.json`, five real-data vectors so any implementation can
+verify byte-for-byte agreement.
+
 Data: CC0. Scripts: MIT. From the operators of https://silentpayments.net,
 where the index behind these numbers publishes [tamper-evident fingerprints](https://njump.me/npub1wc5were3y63h4nwcckdrw72gceh4kgz8eg7fz0zrk2xufr4dx9xqlvmcx8)
 of everything it serves; plain-language story [here](https://bitsaga.be/insights/the-server-that-can-be-caught-lying).

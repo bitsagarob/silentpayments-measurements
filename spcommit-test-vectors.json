@@ -1,0 +1,158 @@
+{
+  "description": "Test vectors for the spcommit tweak-index commitment scheme. Generated from the production silentpayments.net oracle and cross-checked against its production commitment chains. See SPCOMMIT.md for the format specification.",
+  "hash": "sha256, all preimages are ASCII strings, all hex lowercase",
+  "chain_rule": "head(H) = sha256(ascii(head(H-1)) || ascii(commitment(H))), both operands 64-char lowercase hex strings",
+  "genesis": {
+    "v1": {
+      "preimage": "spcommit-v1-genesis",
+      "head": "ef4085e8fda4301f1dce6fce304aaf950a186413fea31e61042a88311e9bf377"
+    },
+    "v2": {
+      "preimage": "spcommit-v2-genesis",
+      "head": "504f3285185adca6f8c0caa7940dab2dd96515f5fdd9c7aaab4cb1c004daf8f6"
+    }
+  },
+  "chain_bootstrap": {
+    "note": "The vectors below are not consecutive heights, so chaining them in sequence is meaningless. This demonstrates the chain rule once, on the first indexed block: head(709656) = sha256(genesis_head || commitment(709656)).",
+    "height": 709656,
+    "v1": {
+      "head_after": "cc4dc691907cf8469879742ac46cd1fca3ed883788e12d3a68b906a2a0d64b3c"
+    },
+    "v2": {
+      "head_after": "66e1196d029589c33c2216f5e9a067647878f0a7d32a3fc4601ff11d8bfce336"
+    }
+  },
+  "vectors": [
+    {
+      "height": 709656,
+      "blockhash": "11211b876a92f559c3dc3961532750d8581ca98a10d304000000000000000000",
+      "v1": {
+        "tweaks": [
+          "03aa45b046a59566c2c273095b99bb3076d95108009c490ba26a41d0579281ff82",
+          "03fb7925ca5a351dbe8edae98b5f6e5d01ce2f2473f4a872912f37c865f5d1c93b"
+        ],
+        "expected_commitment": "2ef3583dce334cac97c2a03f799f19bb778656e7dae8bb1f2c59e4e782dbf881"
+      },
+      "v2": {
+        "txs": [
+          {
+            "txid": "2bc58aff06db5dc115444cc8ea0d6d4ec0f174a5751e258d2537de4396203d1e",
+            "tweak": "03aa45b046a59566c2c273095b99bb3076d95108009c490ba26a41d0579281ff82",
+            "outputs_short": "983f0dbc51af457b"
+          },
+          {
+            "txid": "6146f07b979af57ddcde97fb8dd29536e9a3b354bdb0d4b170161cebcccae027",
+            "tweak": "03fb7925ca5a351dbe8edae98b5f6e5d01ce2f2473f4a872912f37c865f5d1c93b",
+            "outputs_short": "0188b8ed6c5b9db7"
+          }
+        ],
+        "spent_outputs": "",
+        "expected_commitment": "9359e3dba8734ef96d4e31b499febf921d8242f26fe0dc220533f0ab13c166c1"
+      }
+    },
+    {
+      "height": 709700,
+      "blockhash": "41060fc2263e8c1086afc3f8008a02d647bd4048488e09000000000000000000",
+      "v1": {
+        "tweaks": [],
+        "expected_commitment": "abe5d9febfbd9aeabfb938ccd77d1e48646a98d3349b2756bac341c863131f31"
+      },
+      "v2": {
+        "txs": [],
+        "spent_outputs": "",
+        "expected_commitment": "72e6ce1941050f28fb231ea466aa77ec43081e1fc901fd48e98978823f3d44b1"
+      }
+    },
+    {
+      "height": 709731,
+      "blockhash": "57dd0f997f8c774811c02804c5d70b84c277c693c7e505000000000000000000",
+      "v1": {
+        "tweaks": [],
+        "expected_commitment": "8d834551ba49601a64a175a2a3b81aa247b84822c3f66c79e20556a307816eff"
+      },
+      "v2": {
+        "txs": [],
+        "spent_outputs": "907b775220939dfc",
+        "expected_commitment": "e50b53a289e9657c885de540e8e8855890d2da286698a19f3c70ee6a87e5a8c8"
+      }
+    },
+    {
+      "height": 715000,
+      "blockhash": "dd44132a6a1454a9b140330ce21cb7691e450dd8665d03000000000000000000",
+      "v1": {
+        "tweaks": [
+          "03651b143620e6ba9af7e17f9ab585ea1b49ccaf4bfe66f7a6d326c61b49a2c0ff",
+          "02af0de915368b5f4468ac00b1b5d84fd346be3c4796457a17aa7c487de44f2ff8"
+        ],
+        "expected_commitment": "be7a31f2402281eb2633a7f26953e6394b2a49f5a0aecf87f5f234f028c97b45"
+      },
+      "v2": {
+        "txs": [
+          {
+            "txid": "774d03c6ea8dc59038cffce1160fbaeeb8485a44c209de4487e061004029925d",
+            "tweak": "03651b143620e6ba9af7e17f9ab585ea1b49ccaf4bfe66f7a6d326c61b49a2c0ff",
+            "outputs_short": "28e17bbafe21b765"
+          },
+          {
+            "txid": "c17b0d1d1c62c7f9a59a533e0617194449effe13c6114960a705f538ce2202bd",
+            "tweak": "02af0de915368b5f4468ac00b1b5d84fd346be3c4796457a17aa7c487de44f2ff8",
+            "outputs_short": "112ad242ac5c10e6"
+          }
+        ],
+        "spent_outputs": "0148f6eba8d825633ff7dbd32e9c98b1",
+        "expected_commitment": "8fc0ca2ab0cd106cc3dcc76ebb381cda573c659018352048b6a21ab94e950a5f"
+      }
+    },
+    {
+      "height": 750000,
+      "blockhash": "8ea576341bc1c2d597a0b48b6277cb87f0b9b174a99205000000000000000000",
+      "v1": {
+        "tweaks": [
+          "027c916b4665c7aa3d014f19be8651dd760c5a8502f947b426d34930bf885a70a2",
+          "034bf7cdc305dc7b47adf391c91bf63239951ba3d58fb39541a8f4bb497c4b1784",
+          "0279daae149a93ca0a4872d4568eb82f37f5e4bd177a83b5409953eb0f5c9407d9",
+          "02aa67bb17f6dc1381d4dfad0dace2948db7803864086bd46d5d0e95d13b4be7aa",
+          "03f802578eaff9c661e3dd61824139ee56c8e24025f6c65e79d5f7583eebecc28b",
+          "02891cb1ec6b21a9c3ce8a660cc7016d73dfd69c1863784f2500ec7a12e3e62643"
+        ],
+        "expected_commitment": "1c3f5ce6eee47a95a6f75910b282cd0829fa7ed568b8ce22adfd1551811c8b95"
+      },
+      "v2": {
+        "txs": [
+          {
+            "txid": "475dc9e2ef2b8d85330b3615b473ec11fddda58d7f9a1595bc451ddeb95e132b",
+            "tweak": "027c916b4665c7aa3d014f19be8651dd760c5a8502f947b426d34930bf885a70a2",
+            "outputs_short": "5a223811e2779f30"
+          },
+          {
+            "txid": "4c9fe4ad5923fd41074da3f92da6359cbafbd96ecbb758481d6c1f106242703e",
+            "tweak": "034bf7cdc305dc7b47adf391c91bf63239951ba3d58fb39541a8f4bb497c4b1784",
+            "outputs_short": "15813112881cd9c1"
+          },
+          {
+            "txid": "603ec334f60f628722678c32d3798ef964821627237b7b7c8bd86c844125286d",
+            "tweak": "0279daae149a93ca0a4872d4568eb82f37f5e4bd177a83b5409953eb0f5c9407d9",
+            "outputs_short": "cf0adbe16e09cf8b"
+          },
+          {
+            "txid": "8d3a70651a528a2f779e57caefff2344fc7ce48448944013d600ea375c489aaf",
+            "tweak": "02aa67bb17f6dc1381d4dfad0dace2948db7803864086bd46d5d0e95d13b4be7aa",
+            "outputs_short": "56c340ff7f78ebd5"
+          },
+          {
+            "txid": "773949ff8fdb21a2d70d1a873709d3b63ffab2820393f60f07a253231cff52b3",
+            "tweak": "03f802578eaff9c661e3dd61824139ee56c8e24025f6c65e79d5f7583eebecc28b",
+            "outputs_short": "c6b8e91724d49259"
+          },
+          {
+            "txid": "61a8fa7bfac9246e186800838fc7cc8da1c66e0782ef5c7d735e50044882a2ef",
+            "tweak": "02891cb1ec6b21a9c3ce8a660cc7016d73dfd69c1863784f2500ec7a12e3e62643",
+            "outputs_short": "ec12360604ebed3d"
+          }
+        ],
+        "spent_outputs": "1910625889e33995ef78e902d89348b006c7baec453f77f8563b2ec46b05b2965dca6077f7a4a481",
+        "expected_commitment": "5d2822b6031e3f20b0a30e0418b04a041ab40d86d422e3febb5fafcc97138c3f"
+      }
+    }
+  ]
+}
