@@ -8,7 +8,7 @@ and the code that actually shipped:
 - [setavenger/BIP0352-light-client-specification](https://github.com/setavenger/BIP0352-light-client-specification)
   (the client-side workflow, written 2024 against BlindBit Oracle v1, dormant since Nov 2024)
 - [silent-payments/BIP0352-index-server-specification](https://github.com/silent-payments/BIP0352-index-server-specification)
-  (the server-side capability catalogue, dormant since Oct 2025)
+  (the server-side capability catalogue, no substantive change since Oct 2025)
 - BlindBit Oracle v2 as deployed (gRPC, filters removed, new spent-output semantics), which
   contradicts both documents
   ([lcspec issue #2](https://github.com/setavenger/BIP0352-light-client-specification/issues/2),
@@ -16,8 +16,8 @@ and the code that actually shipped:
 - the conclusions of the 2024 delving thread
   [Silent Payments Light Client Protocol](https://delvingbitcoin.org/t/silent-payments-light-client-protocol/891),
   which neither spec absorbed
-- the measurements in this repository, which answer the two open questions the 2024 thread
-  stalled on
+- the measurements in this repository, which answer one of the two open questions the 2024
+  thread stalled on outright (filter sizes) and bound the other (payload cost)
 
 It is written by the operator of an independent production BlindBit Oracle v2 deployment
 (full mainnet index, height 709,656 to tip). Corrections and objections are the point:
@@ -35,7 +35,7 @@ One protocol, four wire formats, zero interoperability. Today:
 
 | Format | Served by | Spoken by | Status |
 |---|---|---|---|
-| BlindBit v1 HTTP-JSON | nobody (removed) | every shipped spdk/Dana build | clients orphaned |
+| BlindBit v1 HTTP-JSON | nobody (deprecated; response shapes changed, filter endpoints gone) | every shipped spdk/Dana build | clients orphaned |
 | BlindBit v2 gRPC | blindbit-oracle deployments (setor.dev, ours) | blindbit-cli, blindbit-desktop, spdk v2 branch | live, undocumented in any spec |
 | Cake Electrum dialect (`blockchain.tweaks.subscribe`) | Cake's servers | Cake Wallet | live, documented nowhere but client source |
 | Bare per-block tweak array | silentiumd; Bitcoin Core's unmerged index ([Sjors/bitcoin#86](https://github.com/Sjors/bitcoin/pull/86)) | | the shape Core could one day serve |
@@ -64,7 +64,7 @@ provider without requiring architectural changes."
 - **Light client**: a wallet that scans via an indexer instead of its own node, and that
   reveals to the indexer nothing more specific than interest in whole blocks.
 - **Cut-through**: omitting or deleting tweaks of transactions whose taproot outputs are
-  all spent. Reduces data (~38% historically per setavenger, unmeasured recently) at the
+  all spent. Reduces data (as much as 38% historically per setavenger's own analysis, unmeasured recently) at the
   cost of historical rescan completeness.
 - **Match**: a client-side equality between a derived candidate output key and an output
   identifier served for a block.
@@ -86,16 +86,16 @@ inherited from setavenger's spec: **interest is expressed at block granularity o
 
 The 2024 thread settled this
 ([harding, posts 12 and 14](https://delvingbitcoin.org/t/silent-payments-light-client-protocol/891/12);
-conceded in post 15). Summarised because the draft's normative choices depend on it:
+accepted by josibake in post 15). Summarised because the draft's normative choices depend on it:
 
 An indexer that wants the network identity behind silent-payment address X can serve
-scanning data that only X's owner will act on, then observe who acts. In its strongest
-forms the served data is **entirely honest**: a phantom-transaction filter built from a
-never-broadcast double-spend of a real payment (only the filter is fake, and only
-recomputation from the block detects it); a legitimately mined block containing only a
-payment to X; or plain dust spam to X across several blocks, watching who fetches
-follow-up data every time. No integrity mechanism detects the last two, because there is
-nothing false to detect. The leak channel is the client's **conditional fetch behaviour**.
+scanning data that only X's owner will act on, then observe who acts. Three
+variants, in increasing honesty: a phantom-transaction filter built from a
+never-broadcast double-spend of a real payment, where the tweak data is fully honest and
+only the filter is fake (detectable only by recomputing the filter from the block); a
+legitimately mined block containing only a payment to X; and plain dust spam to X across
+several blocks, watching who fetches follow-up data every time. In the last two, every
+served byte is honest, so no integrity mechanism has anything to detect. The leak channel is the client's **conditional fetch behaviour**.
 
 Therefore, normatively:
 
@@ -106,8 +106,9 @@ Therefore, normatively:
    deanonymisation beacon. This retires the simplified-UTXOs-on-match flow of the 2024
    client spec, as the thread itself concluded and as the index-server spec's comparison
    table already states ("Should download full block on filtered match").
-2. Full-block fetching also makes a BIP-352 light client's network behaviour
-   indistinguishable from an ordinary BIP-158 client's, which is itself cover.
+2. Full-block fetching also makes the block-fetch leg of a BIP-352 light client's
+   behaviour indistinguishable from an ordinary BIP-158 client's, which is itself cover
+   (the tweak-feed leg remains distinguishable).
 3. Clients that expect more than about one payment a day SHOULD run their own
    infrastructure; the light protocol optimises the low-volume common case.
 
@@ -122,7 +123,9 @@ servers (see section 9).
 
 Scope this honestly: commitments do **not** defeat the section 3.2 attack, whose winning
 variants serve honest data, and audits are retrospective, so they never protect the first
-victim. Commitments and full-block-on-match are complementary layers, not substitutes.
+victim. Where the optional filter profile is offered, filters sit **outside** the
+commitment: their only integrity check is recomputation from the block. Commitments and
+full-block-on-match are complementary layers, not substitutes.
 Any text implying a committed server is therefore safe to fetch matches from is wrong.
 
 ### 3.4 The BIP-37 lesson, applied
@@ -130,14 +133,16 @@ Any text implying a committed server is therefore safe to fetch matches from is 
 Every tunable that trades privacy against bandwidth will be tuned toward bandwidth by
 wallets (BIP-37's false-positive rate proved it). This draft therefore makes the private
 behaviour the **default and cheapest** path: full-block-on-match is normative, dust
-filtering defaults to off, and no request parameter narrows interest below a block.
+filtering defaults to off, and no request parameter narrows interest below a block (a
+dust limit narrows by value class, never by output identity, and remains a client
+fingerprint on the wire, which is why zero is the default).
 
 ### 3.5 Out of scope: the custodial shape
 
 Servers that take the client's **scan private key** (Frigate-style
-`blockchain.silentpayments.subscribe`, Cake's hosted scanning, any "remote scanner") are a
-different trust model: the operator can link every payment the wallet ever receives,
-retroactively, and "keys held in RAM only" is a promise, not a property. That model is
+`blockchain.silentpayments.subscribe`, or any "remote scanner") are a different trust
+model: the operator can link every payment the wallet ever receives, retroactively, and
+session-only key handling is a promise, not a property. That model is
 legitimate for self-hosted deployments (the "My Scanner" stack of the index-server spec)
 and out of scope here. A server MUST NOT describe scan-key custody as conforming to this
 protocol.
@@ -151,7 +156,8 @@ Bitcoin Core index that will plausibly serve nothing but bare tweak arrays.
 
 Per block: the list of 33-byte tweaks of eligible transactions (eligibility per BIP-352),
 plus the block hash and height. Nothing else. Satisfiable by Core's prospective
-`-bip352index` and by silentiumd today.
+`-bip352index`; silentiumd is close (as shipped it serves a cut-through set and omits
+the block hash, so it would need small changes).
 
 ### Tier 1: compute index (indexed tier)
 
@@ -194,20 +200,20 @@ serve and live clients consume, it needs no filter machinery, and the data it re
 (which outputs a block spends) is public chain data in any case. The salted design's
 marginal obfuscation does not survive the fact that spentness is globally recomputable.
 Servers MAY additionally serve the salted form for v1 compatibility; new clients SHOULD
-NOT depend on it. If the working group overrules this, the salt's serialization must be
-pinned this time; the 2024 text left the block-hash byte order in the preimage ambiguous.
+NOT depend on it. If the working group overrules this, the salt's serialization needs
+pinning; the 2024 text left the block-hash byte order in the preimage ambiguous.
 
 ### Byte order, said once, with vectors to follow
 
 In JSON bindings, hashes are hex strings in standard display order. In binary bindings,
-`txid` and `block_hash` fields are raw bytes in **display order** (verified against a
-live v2 deployment; note that upstream documentation calls this order "little-endian",
-which is exactly backwards, and that outpoints embedded in v2's full-block `inputs`
-field use internal order, the opposite of the top-level fields in the same message).
-This draft bans the words big-endian and little-endian from all future text in favour of
-"display order" and "internal order" plus byte-level test vectors. Getting this wrong
-produced a real bug in the one client migration attempted so far: every reported
-outpoint byte-reversed, spends impossible.
+`txid` and `block_hash` fields are raw bytes in **display order**, including the txids
+inside the full-block `inputs` outpoints (all verified against a live v2 deployment;
+upstream documentation calls this order "little-endian", inverted relative to the usual
+meaning). The remaining quirk: the 4-byte vout inside those outpoints is big-endian,
+not the little-endian of consensus serialization. This draft bans the words big-endian
+and little-endian from all future normative text in favour of "display order" and
+"internal order" plus byte-level test vectors. Getting this wrong produced a real bug in
+our own migration testing: every reported outpoint byte-reversed, spends impossible.
 
 ## 5. Capability discovery
 
@@ -228,8 +234,8 @@ commitments        absent | { scheme, publication }
 ```
 
 Two rules the shipped world currently violates: a server MUST NOT silently ignore a
-request parameter it advertises (v2's REST layer today accepts and ignores dust and
-cut-through parameters); and a server that prunes (cut-through or partial history) MUST
+request parameter it advertises (v2's gRPC request message carries `dustlimit` and
+`cut_through` fields that are documented upstream as reserved and never read); and a server that prunes (cut-through or partial history) MUST
 advertise its horizon, because Cake's incident shows what silent pruning does to rescue
 scans. A request the server cannot honour MUST be an error, not a degraded answer.
 
@@ -243,8 +249,11 @@ One data model, two normative bindings, mirroring what exists:
   `?start=&end=` extension; servers advertise limits.
 - **gRPC**: the shipped v2 surface (`GetInfo`, `GetBestBlockHeight`,
   `GetBlockHashByHeight`, `StreamComputeIndex`, `StreamBlockScanDataShort`,
-  `GetFullBlock`, `GetSpentOutputsShort`), adopted as-is with the section 4 byte-order
-  and capability rules layered on.
+  `GetFullBlock`, `GetSpentOutputsShort`), adopted with the section 4 byte-order and
+  capability rules layered on. One scoping note: `GetFullBlock` is retained for
+  self-hosted and trusted deployments (and bulk tooling); calling it on a match against
+  an anonymous indexer is exactly the conditional fetch section 3.2 forbids, so for
+  anonymous use the section 3.2 block-sourcing rule applies to it in full.
 
 Electrum-verb bindings (`blockchain.tweaks.subscribe` and relatives) are acknowledged as
 a live third dialect and left to a compatibility appendix: they presuppose the
@@ -257,17 +266,18 @@ Every per-block payload, in every binding, MUST carry the block hash and height.
 
 Nobody specifies this today. Minimum procedure: clients track the (height, hash) of each
 scanned block; on each sync, re-fetch the current hash at the last scanned height; on
-mismatch, walk back until hashes agree and rescan forward. Servers MUST serve identified
-(height, hash) data for stale branches for at least N blocks of depth, or answer with an
-explicit gone-error that distinguishes "reorged away" from "not yet indexed". The value
-of N and the stale-branch retention question are open items for implementers.
+mismatch, walk back until hashes agree and rescan forward. Servers SHOULD serve
+identified (height, hash) data for stale branches to a stated depth, or answer with an
+explicit gone-error that distinguishes "reorged away" from "not yet indexed". The
+retention depth is an open item for implementers.
 
 ## 8. Client obligations
 
 Carried over from the 2024 spec because they are correct and easy to lose:
 
-- Dust limit is client-chosen, **default 0**. A non-zero limit is a completeness trade
-  the user consents to, not a server default.
+- Dust limit is client-chosen, **default 0** (josibake's 2024 argument, already shipped
+  practice). A non-zero limit is a completeness trade the user consents to, not a
+  server default.
 - A wallet MUST permanently track its own previously matched scriptPubKeys, because
   senders demonstrably reuse derived bc1p addresses out-of-band, invisible to any scan.
 - Wallet state should live in one instance; concurrent instances diverge on unconfirmed
@@ -283,11 +293,14 @@ because tier-0 conformance must stay Core-satisfiable.
 A committing server publishes, per block, a digest binding everything it serves for that
 block (tweak set, and spent-output set where offered), each digest chained to its
 predecessor, and periodically **checkpoints the chain head to a venue outside its own
-control** (this deployment: nostr events on public relays, every six hours). Anyone with
-a node can recompute any block's digest from consensus data and the spec, so omission
-contradicts the published chain, and two clients served different data hold mutually
-incompatible proofs. Detection is attributable to third parties, including rival servers,
-which turns "trust me" into "catch me".
+control** (this deployment: nostr events on public relays, every six hours). For the
+sorted tweak-set digest, anyone with a node can recompute any block's value from
+consensus data and the spec, so omission contradicts the published chain, and two
+clients served different data hold mutually incompatible proofs; detection is
+attributable to third parties, including rival servers, which turns "trust me" into
+"catch me". The digest over the served spent-output blob currently commits to server
+ordering, so cross-server chain equality needs that ordering canonicalised first: an
+open item, flagged rather than papered over.
 
 Properties, restated within section 3.3's limits: detects omission and equivocation
 after the fact; does not detect honest-data unmasking attacks; never protects the first
@@ -296,8 +309,8 @@ victim. The concrete scheme this deployment runs, with test vectors, is
 for feedback before it ossifies, and the digest definition is deliberately
 transport-agnostic so an HTTP server, a gRPC server and, one day, a P2P-serving node can
 emit identical chains. Cross-server digest comparison is exactly the check the
-[tweak-service-auditor](https://github.com/silent-payments/tweak-service-auditor) gropes
-toward with full-data comparisons; digests make it cheap.
+[tweak-service-auditor](https://github.com/silent-payments/tweak-service-auditor)
+already performs with full-data comparisons; digests make it cheap.
 
 ## 10. Test vectors and the interoperability gate
 
@@ -308,10 +321,10 @@ toward with full-data comparisons; digests make it cheap.
 - Byte-order vectors (section 4) and commitment vectors
   ([spcommit-test-vectors.json](./spcommit-test-vectors.json)) exist in this repository.
 - Promotion rule, borrowed from the BOLT process because it is the best-validated device
-  in bitcoin standardisation: **nothing in this document is final until two independent
-  implementations interoperate against it**. One implementation slot is filled
-  (blindbit-oracle v2 plus its clients); the second slot is open, and filling it is the
-  gate, not review consensus.
+  we know of in bitcoin standardisation: **nothing in this document is final until two independent
+  implementations interoperate against it**. The first slot has a natural candidate
+  (blindbit-oracle v2 plus its clients), though it does not itself conform yet (section
+  5); the second slot is open. Filling both is the gate, not review consensus.
 
 ## 11. Explicitly deferred
 
@@ -319,7 +332,7 @@ toward with full-data comparisons; digests make it cheap.
   untrusted couriers): deferred to a one-line reservation. This draft's structures keep
   a reserved type/capability hook so a future committed structure can slot in without a
   flag day, on the precedent of BIP-158's reserved filter-type byte. Specifying more
-  today would repeat the scope mistake that killed three prior Core attempts.
+  today would repeat the scope creep that has stalled prior Core indexing attempts.
 - **Out-of-band payment notifications** (nostr or otherwise,
   [delving 2203](https://delvingbitcoin.org/t/silent-payments-notifications-via-nostr/2203)):
   an optimisation layer over scanning, never a replacement; nothing here depends on it.
@@ -329,8 +342,8 @@ toward with full-data comparisons; digests make it cheap.
 
 ## 12. Deprecations this draft names
 
-- **BlindBit v1 HTTP-JSON**: removed server-side, still spoken by every shipped
-  spdk/Dana build. Servers MAY bridge it (a v1-to-v2 shim is ~days of work); the shape
+- **BlindBit v1 HTTP-JSON**: deprecated server-side with changed response shapes, the
+  filter endpoints gone entirely, still spoken by every shipped spdk/Dana build. Servers MAY bridge it (a v1-to-v2 shim is ~days of work); the shape
   is otherwise historical.
 - **Cake's `blockchain.tweaks.subscribe` dialect**: live, undocumented outside client
   source, carries no block hashes, always cut-through, no integrity story. Its users
@@ -351,9 +364,11 @@ repository.
 
 ## Appendix B: what this draft settled by adoption rather than argument
 
-For reviewers checking the receipts: full-block-on-match (delving 891 posts 12 to 15);
-dust as client parameter (891 post 3, already shipped); tweaks and filters fetched
-together where filters exist (891 posts 3/5); the three-stack deployment taxonomy and
+For reviewers checking the receipts: full-block-on-match (harding's argument, delving
+891 posts 12 and 14, accepted by josibake in post 15, an intellectually honest
+retraction this draft builds on); dust as client parameter (josibake, 891 post 3,
+already shipped); the filter-size question that finally got measured (josibake's ask,
+same post); tweaks and filters fetched together where filters exist (891 posts 3/5); the three-stack deployment taxonomy and
 the capability-discovery idea (index-server spec); the block-granular privacy invariant,
 paid-scriptPubKey tracking, and the single-instance caveat (light-client spec); the
 tier-1 wire shapes (shipped BlindBit v2); named capability flags over scalar versions

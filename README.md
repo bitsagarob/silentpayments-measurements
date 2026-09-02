@@ -7,7 +7,8 @@ had measured what any of them actually costs. The [developer discussion](https:/
 that needed these numbers stalled in June 2024 waiting for them.
 
 **What we did:** measured all three designs across **every one of the 255,434
-mainnet blocks** from taproot activation (block 709,656, November 2021) to
+mainnet blocks** from block 709,656 (the index's first height, just after taproot
+activation at block 709,632, November 2021) to
 block 965,089 (September 2026). No sampling. Sources: a Bitcoin Core v31 node
 and a production BlindBit Oracle v2, both queried locally.
 
