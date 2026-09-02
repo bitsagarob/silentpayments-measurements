@@ -71,6 +71,11 @@ commitments the server publishes (the tamper-evident fingerprints), and
 `spcommit-test-vectors.json`, five real-data vectors so any implementation can
 verify byte-for-byte agreement.
 
+Elsewhere: [blindbit-v1-shim](https://github.com/bitsagarob/blindbit-v1-shim) serves the
+removed v1 HTTP API in front of a v2 oracle, so the clients that were left behind by the
+rewrite keep working. It rebuilds the taproot-only filters measured above, since v2 no
+longer serves any.
+
 Data: CC0. Scripts: MIT. From the operators of https://silentpayments.net,
 where the index behind these numbers publishes [tamper-evident fingerprints](https://njump.me/npub1wc5were3y63h4nwcckdrw72gceh4kgz8eg7fz0zrk2xufr4dx9xqlvmcx8)
 of everything it serves; plain-language story [here](https://bitsaga.be/insights/the-server-that-can-be-caught-lying).
