@@ -19,8 +19,11 @@ figures).
 A BIP-352 receiver must test every silent-payment-eligible transaction: one 33-byte tweak
 point per transaction from an index server, one ECDH plus a tagged hash plus a point add on
 the phone. Measured volume on mainnet: 36,340 candidates a day, 13.3 million a year, 188
-million since taproot activation. The phone does one test in about 40 microseconds, so a
-year of chain is under 10 minutes on one core. Compute is not the problem. The two real
+million since taproot activation. One test costs 35 to 65 microseconds on the ARM laptops and
+x86 server that have been measured (below), so a year of chain is under 15 minutes on one
+core. **The iPhone run itself is still pending**: the harness in `phonebench/` is built and
+gated on finding a real mainnet payment, but no number has come off a device yet. Compute
+is not the problem at any figure in that range. The two real
 constraints were bandwidth, 33 bytes per candidate as a structural floor, and liveness on
 iOS, where an app cannot scan while closed.
 
@@ -32,7 +35,9 @@ server without the server learning anything.
 
 | Quantity | Value | Status |
 |---|---|---|
-| Cleartext ECDH per tweak on a phone | 40 µs | measured, `phonebench/` |
+| Cleartext ECDH per tweak, ARM laptops | 39.3 µs (libsecp256k1 bench, Snapdragon X Elite), 34.9 µs (Frigate, Apple M1) | upstream commit e2ead23 VERIFIED; the Frigate figure INFERRED from our benchmark notes |
+| Cleartext ECDH per tweak, our x86 server | 62.6 µs (AMD EPYC, single core) | measured, `phonebench/linux` |
+| Cleartext ECDH per tweak on an iPhone | not yet measured | harness built, run pending |
 | Full homomorphic ECDSA signature on secp256k1, Zama TFHE | "1-2 day on 64 cores machine" | VERIFIED [1] |
 | Share spent on the scalar multiplication | "almost half of the final run time" | VERIFIED [1] |
 | One encrypted-scalar point multiplication | 770 to 1,540 core-hours | INFERRED |
@@ -42,7 +47,7 @@ server without the server learning anything.
 | One 6-core server per day | 144 core-hours | arithmetic |
 
 One dedicated machine serves about one percent of one user. The slowdown against the
-phone is roughly 3.5 x 10^7. The authors of the original OMR paper named this exact
+clear is roughly 2 x 10^7 even at the slowest measured figure. The authors of the original OMR paper named this exact
 "clueless" design and dismissed it: "This does not even require any new clues or clue keys,
 since it reuses whatever means the system already has to define pertinence. Alas, for
 typical protocols this would be completely impractical." (VERIFIED, [3] section 6.) No
@@ -144,11 +149,11 @@ notification service extension "capped at 24 MB" with "a maximum of 30 seconds t
 
 Against that budget:
 
-| Trigger | Data | Compute at 40 µs per tweak |
+| Trigger | Data | Compute at 65 µs per tweak |
 |---|---|---|
-| One block, about 252 tweaks | about 8 KB | 10 ms |
-| One hour, six blocks | under 50 KB | 60 ms |
-| One day, if every push was missed | 1.2 MB | 1.5 s |
+| One block, about 252 tweaks | 8 KB tweaks only, about 16 KB with each transaction's outputs | 16 ms |
+| One hour, six blocks | 50 KB tweaks only; 97,912 bytes measured live in the per-transaction format the app reads | 0.1 s |
+| One day, if every push was missed | 1.2 MB tweaks only, about 2.4 MB with outputs | 2.4 s |
 
 The server sends the same payload to every registered device: the new block heights and
 nothing else. It learns a push token and nothing per user, because every device receives
