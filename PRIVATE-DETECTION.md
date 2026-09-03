@@ -36,7 +36,7 @@ server without the server learning anything.
 | Quantity | Value | Status |
 |---|---|---|
 | Cleartext ECDH per tweak, ARM laptops | 39.3 µs (libsecp256k1 bench, Snapdragon X Elite), 34.9 µs (Frigate, Apple M1) | upstream commit e2ead23 VERIFIED; the Frigate figure INFERRED from our benchmark notes |
-| Cleartext ECDH per tweak, our x86 server | 62.6 µs (AMD EPYC, single core) | measured, `phonebench/linux` |
+| Cleartext ECDH per tweak, our x86 server | 62 to 72 µs (AMD EPYC, single core; 36,340 tweaks in 2.6 s on 2026-09-03) | measured, `phonebench/linux` |
 | Cleartext ECDH per tweak on an iPhone | not yet measured | harness built, run pending |
 | Full homomorphic ECDSA signature on secp256k1, Zama TFHE | "1-2 day on 64 cores machine" | VERIFIED [1] |
 | Share spent on the scalar multiplication | "almost half of the final run time" | VERIFIED [1] |
@@ -153,7 +153,7 @@ Against that budget:
 |---|---|---|
 | One block, about 252 tweaks | 8 KB tweaks only, about 16 KB with each transaction's outputs | 16 ms |
 | One hour, six blocks | 50 KB tweaks only; 97,912 bytes measured live in the per-transaction format the app reads | 0.1 s |
-| One day, if every push was missed | 1.2 MB tweaks only, about 2.4 MB with outputs | 2.4 s |
+| One day, if every push was missed | 1.2 MB tweaks only; 2.4 to 3.8 MB with outputs, measured on two different days | 2.4 s |
 
 The server sends the same payload to every registered device: the new block heights and
 nothing else. It learns a push token and nothing per user, because every device receives
