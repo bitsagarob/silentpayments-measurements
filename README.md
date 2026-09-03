@@ -17,6 +17,10 @@ and a production BlindBit Oracle v2, both queried locally.
 that merges the two existing spec efforts with what actually shipped. Disagreement
 welcome, that is what it is for.
 
+**New (3 Sep 2026):** [PRIVATE-DETECTION.md](./PRIVATE-DETECTION.md) closes a question
+with a number: no existing cryptography lets a server find your silent payments without
+learning they are yours, and the honest fix for an iPhone in a pocket needs none.
+
 ## Results in one table
 
 | what the wallet downloads | whole range | average per block | per day, following the chain* |
