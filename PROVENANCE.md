@@ -38,12 +38,17 @@ Every value in this repository comes from the run described here. Facts only.
 
 `collect_oracle.py` requests `{"dustlimit": 0, "cut_through": false}`.
 
-BlindBit Oracle v2 applies neither, at any setting. `StreamComputeIndex` and
+BlindBit Oracle v2 applies neither, at any setting. Four functions in
+`internal/database/dbpebble/read.go` implement dust and cut-through filtering
+(`TweaksForBlock`, `FetchOutputsCutThroughDustLimit`, `TweaksForBlockCutThrough`,
+`TweaksForBlockCutThroughDustLimit`); none of the four has a caller. `StreamComputeIndex` and
 `StreamBlockScanDataShort` accept `dustlimit` and `cut_through` on
 `RangedBlockHeightRequestFiltered` and read neither field; upstream documents both as reserved and
 "not yet applied by the server" (`internal/server/GRPC.md`, lines 89-90, commit `8ca09b9`,
-2026-05-27). The three `tweaks_*` configuration flags are read only into the
-`/info` response body; they change neither indexing nor serving.
+2026-05-27). The three `tweaks_*` configuration flags reach only the `/info`
+response body and two startup checks (a warning when all three are false, a fatal error
+when cut-through is combined with `tweaks_only`). They change neither indexing nor serving.
+`internal/indexer/` contains no dust or spentness branch at all.
 
 Verified on the live server: `StreamComputeIndex` for height 900,000 returns byte-identical
 39,677-byte responses for `{"dustlimit": 0, "cut_through": false}` and for
