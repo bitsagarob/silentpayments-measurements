@@ -182,9 +182,13 @@ match leads to the full-block fetch of section 3.2, which resolves it.
 
 ### Optional profile: taproot-only block filters
 
-The 2024 client spec's BIP-158-style filter over new taproot output keys, measured in
-this repository at ~6.1x smaller than stock BIP-158 over full history (0.94 GB vs
-5.78 GB; the gap is not closing with taproot adoption, contrary to 2024's conjecture).
+The 2024 client spec's BIP-158-style filter over new taproot output keys, encoded and
+weighed in this repository at **17.63x smaller than stock BIP-158 over full history**
+(0.33 GB vs 5.78 GB; the gap is not closing with taproot adoption, contrary to 2024's
+conjecture). A server offering this profile MUST encode an element **set**: 65.4% of
+eligible taproot outputs over this range repeat an x-only key already present in the same
+block, so a filter built per output rather than per key is 2.9x larger for no gain to any
+client, which matches on key membership.
 Kept as an **optional bandwidth profile**, not the mandatory path, because the shipped
 ecosystem dropped filters and because a filter's false-positive rate is dual-use: a
 bandwidth knob and plausible-deniability cover for the section 3.2 phantom-filter
@@ -193,9 +197,10 @@ filter-type identifier; the 2024 spec never pinned them, which this draft consid
 blocking gap for the profile, not for the protocol.
 
 The full-history cost comparison this draft inherits from the measurements: a complete
-filter stack (filters + raw tweaks) is ~7.1 GB; the tier-1 self-contained payload is
-~15.1 GB, about 2.1x, in exchange for zero false positives and no per-match fetch
-against the indexer. Both are dust-limit-0, no-cut-through: that is what v2 serves, not a choice. [FILTERS.md](./FILTERS.md) measures what filtering would save.
+filter stack (filters 0.33 GB + raw tweaks 6.20 GB) is 6.53 GB; the tier-1 self-contained
+payload is 15.08 GB, 2.31x, in exchange for zero false positives and no per-match fetch
+against the indexer. Note where the weight sits: the tweaks are nineteen times the
+filters, so the filter profile is not what makes that route cheap. Both are dust-limit-0, no-cut-through: that is what v2 serves, not a choice. [FILTERS.md](./FILTERS.md) measures what filtering would save.
 
 ### Spent-output identifier: decision and rationale
 
@@ -367,8 +372,8 @@ already performs with full-data comparisons; digests make it cheap.
 |---|---|
 | Eligible-transaction tweaks | 187,814,353 (~6.2 GB raw, avg 735/block, era-skewed) |
 | Stock BIP-158 filters, full history | 5.78 GB |
-| Taproot-only filter, full history | 0.94 GB (~6.1x smaller; 3.2x at the inscription peak) |
-| Tier-1 self-contained payload, full history | 15.08 GB (~2.1x the complete filter stack, zero false positives) |
+| Taproot-only filter, full history | 0.33 GB (17.63x smaller; 7.65x at the inscription peak, 23.61x over the last 10,000 blocks). Encoded per block, not modelled |
+| Tier-1 self-contained payload, full history | 15.08 GB (2.31x the complete filter stack of 6.53 GB, zero false positives) |
 | Full serving index on disk | ~109 GB |
 | Same payload, already-spent outputs omitted | 3.10 GB (20.5%) |
 | Same, plus a 546 sat dust limit | 2.29 GB (15.2%) |
