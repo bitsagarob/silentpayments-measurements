@@ -78,10 +78,23 @@ read-time filtering with no dedicated cut-through index:
 | `cut_through: false` | 0.6 ms | 2m23s |
 | `cut_through: true` | 485.5 ms | 34h27m |
 
-Cut-through costs one spend-index lookup per output, so the server does about 800 times
-more work to send about 80% less data. As a read-time filter it is a batch capability, not
-something a wallet can request live. A materialised cut-through index would change this;
-none exists.
+Cut-through costs one spend-index lookup per output, so as a read-time filter the server
+does about 800 times more work to send about 80% less data. No wallet can request that
+live.
+
+This is a build cost, not a per-request cost. A spent output never becomes unspent, so a
+stored cut-through view only ever shrinks and can be patched as spends arrive rather than
+recomputed. Derived from the measured totals, 305,878,397 spends of tracked outputs over
+255,434 blocks is about 1,200 updates per block, against a ten-minute block interval. The
+full cut-through payload is 3.1 GB, against the roughly 109 GB the unfiltered index already
+occupies. A dust limit can be applied on top of the stored view without a second copy,
+because the amounts are already indexed.
+
+So the shape is one build of about 34 hours followed by ordinary operation. That
+materialised index is what the `tweaks_cut_through_with_dust_filter` configuration flag is
+named for; v2 does not build it (see `PROVENANCE.md`). A stale view is safe, only less
+efficient: it may still carry outputs that have since been spent, and it can never omit an
+output that is still unspent.
 
 ## Method
 
@@ -122,11 +135,28 @@ Other checks:
 ## Interaction with the commitments
 
 `SPCOMMIT.md` commits to the `StreamComputeIndex` set requested with
-`{"dustlimit": 0, "cut_through": false}`. A filtered response is a subset of the committed
-set, and the client holds no amounts and no spend data, so it cannot check that subset for
-completeness. Both filters therefore give up the omission detection the commitment chain
-exists to provide. Cut-through gives up more: its answer depends on the tip at the time of
-the request, so it is not reproducible later even in principle.
+`{"dustlimit": 0, "cut_through": false}`. A filtered response is a subset of that set, and
+the client holds neither amounts nor spend data, so it cannot check the subset for
+completeness.
+
+What survives depends entirely on how cut-through is pinned.
+
+| Property | Unfiltered, today | Cut-through pinned to the live tip | Cut-through pinned to fixed checkpoint heights |
+|---|---|---|---|
+| Two clients can confirm they were served the same bytes | yes | no | **yes** |
+| An outside auditor can recompute and catch an omission after the fact | yes | no | **yes** |
+| The client itself can prove nothing was silently dropped | no | no | no |
+
+Pinning to the live tip makes the answer depend on when it was asked, so it is neither
+reproducible nor commitable. Pinning to fixed checkpoint heights, for example every 1,000
+blocks, makes it deterministic: the same request returns the same bytes indefinitely, so it
+can carry its own commitment and be audited exactly as the unfiltered set is.
+
+The third row is not recoverable by any pinning. Proving an omission was legitimate means
+showing, per omitted transaction, that every one of its outputs was already spent, which
+costs about as much data as sending the transaction would have. The commitment chain's
+guarantee has always been detection by third parties after the fact rather than
+verification by the client, and checkpoint pinning preserves that guarantee in full.
 
 ## Not covered
 
