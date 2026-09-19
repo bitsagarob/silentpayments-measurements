@@ -30,7 +30,7 @@ Every value in this repository comes from the run described here. Facts only.
 |---|---|
 | `bip158_bytes` | HTTP body bytes of `/rest/blockfilter/basic/<hash>.bin`, as served. Includes the 33-byte type+blockhash prefix and the compactsize length, ~0.16% above the raw filter. |
 | `taproot_n` | Count of taproot outputs of BIP-352-eligible transactions, exact, from `StreamComputeIndex` (`len(outputs_short)/8`). |
-| `taproot_est_bytes` | `taproot_n*(P+2)/8 + varint(taproot_n)` with `P=19`. Not served bytes: no taproot-only filter is deployed anywhere. Validated against real Golomb-Rice encodings (`P=19, M=784931`, the BIP-158 values) of 19 blocks: aggregate -0.27%, worst single block -2.50%. See `gcs_validation.csv` and `validate_gcs.py`. |
+| `taproot_filter_bytes` | The real encoded size of a BIP-158 style filter over the block's distinct taproot output keys. Not modelled: siphash-2-4 and Golomb-Rice actually run, `P=19, M=784931`, element set deduplicated as BIP-158 and Bitcoin Core do. Measured twice by independently written C implementations that agree on all 255,434 blocks with zero differing bytes, each first proved byte-for-byte identical to Core's own basic filters (11,275 and 1,283 blocks, zero mismatches). Per block in `taproot_filter.csv`. The earlier modelled figure of 0.943 GB fed the size formula the raw output count instead of the element count and was 2.9x too high. |
 | `v2_bytes` | `32 + 33 + len(outputs_short)` summed over the block's index items: txid, tweak, and the 8-byte output-key prefixes. Wire payload, no framing or compression. |
 | `tweaks` | Count of BIP-352-eligible transactions in the block. |
 
@@ -59,6 +59,7 @@ serves, because it serves nothing else.
 
 ## Reproduce
 
-`summarize.py` rebuilds `comparison.csv` from `bip158.csv` and `oracle.csv` and prints every
+`summarize.py` rebuilds `comparison.csv` from `bip158.csv`, `oracle.csv` and
+`taproot_filter.csv`, and prints every
 figure quoted in `README.md`. It needs no node and no indexer. `comparison.csv` is not
 committed because it is fully derived.

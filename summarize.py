@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge oracle.csv + bip158.csv into comparison.csv and print/save the summary."""
+"""Merge oracle.csv + bip158.csv + taproot_filter.csv into comparison.csv and print the summary."""
 import csv, os
 
 DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +19,11 @@ def main():
         r = csv.reader(f); next(r)
         for h, n, v2, tw in r:
             oracle[int(h)] = (int(n), int(v2), int(tw))
+    taproot = {}
+    with open(os.path.join(DIR, "taproot_filter.csv")) as f:
+        r = csv.reader(f); next(r)
+        for h, ni, nd, fb in r:
+            taproot[int(h)] = int(fb)
     bip158 = {}
     with open(os.path.join(DIR, "bip158.csv")) as f:
         r = csv.reader(f); next(r)
@@ -32,18 +37,17 @@ def main():
 
     with open(os.path.join(DIR, "comparison.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["height", "bip158_bytes", "taproot_n", "taproot_est_bytes",
+        w.writerow(["height", "bip158_bytes", "taproot_n", "taproot_filter_bytes",
                     "v2_bytes", "tweaks"])
         for h in heights:
             n, v2, tw = oracle[h]
-            est = round(n * (P + 2) / 8 + varint_len(n), 1)
-            w.writerow([h, bip158[h], n, est, v2, tw])
+            w.writerow([h, bip158[h], n, taproot[h], v2, tw])
 
     def agg(lo, hi):
         hs = range(lo, hi + 1)
         nb = hi - lo + 1
         b158 = sum(bip158[h] for h in hs)
-        tap = sum(oracle[h][0] * (P + 2) / 8 + varint_len(oracle[h][0]) for h in hs)
+        tap = sum(taproot[h] for h in hs)
         v2 = sum(oracle[h][1] for h in hs)
         tw = sum(oracle[h][2] for h in hs)
         tn = sum(oracle[h][0] for h in hs)
