@@ -38,8 +38,8 @@ At that height, 305,878,397 of the 359,001,723 tracked taproot outputs (85.2%) a
 | per output | 1000 | no | 128,942,532 | 231,740,158 | 10,235,185,844 | 67.87% |
 | per output | 1000 | yes | 4,842,726 | 5,909,506 | 362,053,238 | 2.40% |
 
-A dust limit on its own removes 9% to 32%. Cut-through on its own removes 79%. The two
-together remove 97.5%.
+A dust limit on its own removes 9.16% at 546 sat and 29.31% at 1000 sat, reading dust per
+transaction. Cut-through on its own removes 79.46%. The two together remove 97.48%.
 
 The step from a 546 sat limit to a 1000 sat limit under cut-through (15.16% to 2.52%) is
 unspent 546 sat taproot outputs, inscription dust. Note what a 1000 sat limit costs: a
@@ -70,12 +70,14 @@ today, or 7.515 MB with a 546 sat limit.
 
 ## Server cost
 
-Measured on the index this repository's data came from, 1000 blocks at height 900,000,
-read-time filtering with no dedicated cut-through index:
+Measured once, on 1000 blocks at height 900,000, read-time filtering with no dedicated
+cut-through index. **Single-source**: this is the one figure here with no independent second
+measurement, and it was taken on a build that is not the running indexer, since v2 applies
+no filtering at all. Treat it as an order of magnitude, not a number.
 
 | Request | Per block | Extrapolated to 255,434 blocks |
 |---|---:|---:|
-| `cut_through: false` | 0.6 ms | 2m23s |
+| `cut_through: false` | 0.6 ms | 2m33s |
 | `cut_through: true` | 485.5 ms | 34h27m |
 
 Cut-through costs one spend-index lookup per output, so as a read-time filter the server
@@ -98,7 +100,9 @@ output that is still unspent.
 
 ## Method
 
-Two implementations, sharing no code, each computing the same quantities.
+Two implementations, sharing no code, each computing the same quantities. **Neither is in
+this repository**, so the figures above are not reproducible from this checkout. The
+reproduction path is the method below plus the pinned tip.
 
 | | Implementation 1 | Implementation 2 |
 |---|---|---|

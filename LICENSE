@@ -3,8 +3,11 @@ MIT License
 Copyright (c) 2026 Rob Segers
 
 Applies to the scripts in this repository (collect_filters.py, collect_oracle.py,
-validate_gcs.py, summarize.py) and to the prose documents. The data files are
-released separately under CC0; see LICENSE-DATA.
+validate_gcs.py, summarize.py, verify/sweep-verify.py, verify/grpc-leg.py,
+verify/verify_block_lib.py) and to the prose documents. It does NOT cover the vendored
+BIP-352 reference implementation under verify/, which is BSD-2-Clause; see
+verify/LICENSE-BIP352.txt. The data files are released separately under CC0; see
+LICENSE-DATA.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

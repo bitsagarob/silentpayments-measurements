@@ -40,8 +40,10 @@ repository the binary was built in:
 | Working tree at build time | `vcs.modified=true`, explained. The build writes its output binary `blindbit-oracle` into the repository root, and that path is absent from `.gitignore`, so the build's own artefact makes `git status --porcelain` non-empty and Go records the tree as modified. Reproduced on 2026-09-18: a pristine checkout of `7317cd0` builds with `vcs.modified=false`, and the same checkout with only that one untracked binary present builds with `vcs.modified=true`. |
 | Rebuild comparison | **Byte identical.** Rebuilding `7317cd0` at the same absolute path with go1.27.0 reproduces the running binary exactly (`cmp`, no differing byte). The running binary therefore carries no uncommitted source change. |
 
-Vendored reference files, sha256, each byte identical to the same path under
-`bip-0352/` on `bitcoin/bips` master as fetched 2026-09-18:
+Vendored reference files, sha256, each byte identical to `bitcoin/bips` master as fetched
+2026-09-18. `reference.py`, `bitcoin_utils.py`, `bech32m.py`, `ripemd160.py` and
+`send_and_receive_test_vectors.json` come from `bip-0352/`; the `secp256k1lab/` files come
+from `bip-0352/secp256k1lab/src/secp256k1lab/`:
 
 | File | sha256 |
 |---|---|
@@ -169,8 +171,9 @@ None. Zero heights in either leg. No txids to report.
 |---|---|
 | The 254,905 heights of the measured range not in the 529 block plan | not checked |
 | Frigate | not checked. Verified 2026-09-18: the Frigate on `127.0.0.1:50021` answers `server.version` with `["Frigate 1.5.3","1.4"]` and answers `blockchain.silentpayments.tweaks` with `{"code":-32601,"message":"Method not found"}`. Nothing listens on `127.0.0.1:50031`, connection refused. This is a two implementation check, not three. |
-| `taproot_n`, `v2_bytes` in `oracle.csv` | not checked. Only the `tweaks` column was compared. |
-| `bip158.csv`, `gcs_validation.csv`, `comparison.csv` | not checked |
+| `taproot_n`, `v2_bytes` in `oracle.csv` | not checked **by this sweep**, which compared the `tweaks` column only. Both columns are checked independently in `FILTERS.md`, by a different implementation, over all 255,434 heights. |
+| `bip158.csv` | not checked by this sweep. Separately re-fetched from Core REST on 2026-09-19, 200 random heights, 0 mismatches. |
+| `gcs_validation.csv` | not checked |
 | Bitcoin Core's own block and prevout data | not independently checked. Both implementations read the same node, so a fault in that node's block data would not be caught by this comparison. |
 | The `dustlimit` and `cut_through` request parameters | not independently tested here. The 529 block agreement is consistent with the claim in `PROVENANCE.md` that BlindBit Oracle v2 applies neither, but this check does not vary those parameters. |
 | The receiving and scanning side of BIP-352 | not checked. Only the tweak the index serves was compared, not output key derivation, label handling or spending. |

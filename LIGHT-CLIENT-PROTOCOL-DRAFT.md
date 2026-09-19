@@ -8,7 +8,7 @@ and the code that actually shipped:
 - [setavenger/BIP0352-light-client-specification](https://github.com/setavenger/BIP0352-light-client-specification)
   (the client-side workflow, written 2024 against BlindBit Oracle v1, dormant since Nov 2024)
 - [silent-payments/BIP0352-index-server-specification](https://github.com/silent-payments/BIP0352-index-server-specification)
-  (the server-side capability catalogue, no substantive change since Oct 2025)
+  (the server-side capability catalogue, last content change 2025-10-30)
 - BlindBit Oracle v2 as deployed (gRPC, filters removed, new spent-output semantics), which
   contradicts both documents
   ([lcspec issue #2](https://github.com/setavenger/BIP0352-light-client-specification/issues/2),
@@ -38,7 +38,7 @@ One protocol, four wire formats, zero interoperability. Today:
 | BlindBit v1 HTTP-JSON | nobody (deprecated; response shapes changed, filter endpoints gone) | every shipped spdk/Dana build | clients orphaned |
 | BlindBit v2 gRPC | blindbit-oracle deployments (setor.dev, ours) | blindbit-cli, blindbit-desktop, spdk v2 branch | live, undocumented in any spec |
 | Cake Electrum dialect (`blockchain.tweaks.subscribe`) | Cake's servers | Cake Wallet | live, documented nowhere but client source |
-| Bare per-block tweak array | silentiumd; Bitcoin Core's unmerged index ([Sjors/bitcoin#86](https://github.com/Sjors/bitcoin/pull/86)) | | the shape Core could one day serve |
+| Bare per-block tweak array | silentiumd; Bitcoin Core's closed index attempt ([Sjors/bitcoin#86](https://github.com/Sjors/bitcoin/pull/86)) | | the shape Core could one day serve |
 
 A wallet team cannot switch providers without an architecture change. A third-party
 developer building an Electrum silent-payments plugin reported the server spec as their
@@ -46,7 +46,7 @@ main blocker
 ([delving 1816, post 17](https://delvingbitcoin.org/t/stealth-addresses-using-nostr/1816/17)).
 And the absence of any integrity mechanism has already cost real users: Cake's 2024
 "BTC in the void" incident ([cake_wallet#1564](https://github.com/cake-tech/cake_wallet/issues/1564),
-post-mortem in [#2395](https://github.com/cake-tech/cake_wallet/issues/2395)) combined a
+and a second report in [#2395](https://github.com/cake-tech/cake_wallet/issues/2395), both closed) combined a
 silently faulty feed, irreversible server-side cut-through, and no client-side detection,
 so payments became undetectable through the protocol with no self-healing path.
 
@@ -64,8 +64,11 @@ provider without requiring architectural changes."
 - **Light client**: a wallet that scans via an indexer instead of its own node, and that
   reveals to the indexer nothing more specific than interest in whole blocks.
 - **Cut-through**: omitting or deleting tweaks of transactions whose taproot outputs are
-  all spent. Reduces data (as much as 38% historically per setavenger's own analysis, unmeasured recently) at the
-  cost of historical rescan completeness.
+  all spent. **Measured at 79.46% of the payload** over blocks 709,656 to 965,089, spentness
+  pinned at height 967,618 ([FILTERS.md](./FILTERS.md)); setavenger's 2024 analysis said 38%,
+  and the benefit grows with chain age because a coin can only be skipped once it is spent.
+  Costs historical rescan completeness: a cut-through restore recovers the coins a wallet
+  still holds, not the payments it already spent.
 - **Match**: a client-side equality between a derived candidate output key and an output
   identifier served for a block.
 
@@ -136,9 +139,10 @@ behaviour the **default and cheapest** path: full-block-on-match is normative, d
 filtering defaults to off, and no request parameter narrows interest below a block (a
 dust limit narrows by value class, never by output identity, and remains a client
 fingerprint on the wire, which is why zero is the default). The measurements now price
-that knob: a dust limit on its own removes only 9% of the payload at 546 sat and 32% at
-1000 sat, so the fingerprint is paid for very little. The large saving is cut-through,
-which costs no privacy at all.
+that knob: reading dust per transaction, it removes 9.16% of the payload at 546 sat and
+29.31% at 1000 sat, so the fingerprint is paid for very little. The large saving is
+cut-through, at 79.46%, and it narrows nothing about the client, so it is the one bandwidth
+knob in this protocol that costs no privacy.
 
 ### 3.5 Out of scope: the custodial shape
 

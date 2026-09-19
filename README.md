@@ -1,96 +1,75 @@
 # Silent payments light-client measurements
 
-**The question:** a phone wallet cannot scan the blockchain itself, so it
-downloads per-block "scanning data" from a server to discover incoming
-[BIP-352 silent payments](https://bips.dev/352/). Three designs exist for that data. Until now, nobody
-had measured what any of them actually costs. The [developer discussion](https://delvingbitcoin.org/t/silent-payments-light-client-protocol/891)
-that needed these numbers stalled in June 2024 waiting for them.
+A phone wallet cannot scan the chain itself. It downloads per-block scanning data from a
+server to find incoming [BIP-352 silent payments](https://bips.dev/352/). Three designs
+exist for that data. This repository measures all three on the same range.
 
-**What we did:** measured all three designs across **every one of the 255,434
-mainnet blocks** from block 709,656 (the index's first height, just after taproot
-activation at block 709,632, November 2021) to
-block 965,089 (September 2026). No sampling. Sources: a Bitcoin Core v31 node
-and a production BlindBit Oracle v2, both queried locally.
+The 2024 [light-client thread](https://delvingbitcoin.org/t/silent-payments-light-client-protocol/891)
+asked for one of these numbers directly (post 3: "Do you have any numbers for how using a
+taproot filter vs an off-the-shelf BIP158 filter impacts the bandwidth?") and went quiet on
+2024-06-08 without an answer.
 
-**New (2 Sep 2026):** these numbers now feed a converged spec attempt:
-[LIGHT-CLIENT-PROTOCOL-DRAFT.md](./LIGHT-CLIENT-PROTOCOL-DRAFT.md), a pre-draft
-that merges the two existing spec efforts with what actually shipped. Disagreement
-welcome, that is what it is for.
+Every one of the 255,434 mainnet blocks from 709,656 to 965,089. No sampling. Bitcoin Core
+v31.1.0 and a production BlindBit Oracle v2, both on loopback, collected 2026-09-02.
+Provenance: [PROVENANCE.md](./PROVENANCE.md).
 
-**New (3 Sep 2026):** [PRIVATE-DETECTION.md](./PRIVATE-DETECTION.md) closes a question
-with a number: no existing cryptography lets a server find your silent payments without
-learning they are yours, and the honest fix for an iPhone in a pocket needs none.
+## Results
 
-**New (19 Sep 2026):** [FILTERS.md](./FILTERS.md) measures the two filters the caveat
-below used to hand-wave. Skipping already-spent outputs cuts a full restore from 15.08 GB
-to **3.10 GB**, and a 546 sat dust limit on top takes it to **2.29 GB**. It saves a wallet
-following the chain nothing. Computed twice by implementations sharing no code, one of
-which never used the indexer. Also new: [VERIFICATION.md](./VERIFICATION.md), the tweak
-series recomputed against the BIP-352 reference implementation, 526,166 tweaks, zero
-disagreements; and [PROVENANCE.md](./PROVENANCE.md), pinning what produced every figure.
+| What the wallet downloads | Whole range | Per day |
+|---|---|---|
+| BIP-158 basic filter, what light wallets use today | 5.78 GB | 2.84 MB |
+| Taproot-only filter, proposed 2024, never built | 0.94 GB | 0.44 MB |
+| Raw tweaks, 33 bytes per eligible transaction | 6.20 GB | 4.87 MB |
+| BlindBit v2 scanning payload, what ships | 15.08 GB | 8.04 MB |
 
-## Results in one table
+Per day is 144 blocks at blocks 900,000 to 965,089 averages.
 
-| what the wallet downloads | whole range | average per block | per day, following the chain* |
-|---|---|---|---|
-| stock [BIP-158](https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki) filter (what light wallets use today) | 5.78 GB | 22.6 KB | 2.8 MB |
-| taproot-only filter ([proposed 2024](https://github.com/setavenger/BIP0352-light-client-specification), never built)** | 0.94 GB | 3.7 KB | 0.4 MB |
-| complete scanning payload ([BlindBit v2](https://github.com/setavenger/blindbit-oracle), what ships) | 15.08 GB | 59.0 KB | 8.0 MB |
+## Two findings
 
-\* 144 blocks/day at recent-era (blocks 900k-965k) averages.
-\*\* Estimated from exact per-block item counts; the size formula was validated
-against real filter encodings of 21 sample blocks (within ~0.5%).
+**A taproot-only filter is 6.13x smaller than the stock BIP-158 filter over the whole
+range.** The ratio moves hard with era: 3.18x over blocks 800,000 to 849,999, the
+inscription peak, and 12.99x over the last 10,000 blocks. The 2024 conjecture was that
+taproot adoption would close the gap. It has not.
 
-## The two findings
+**The shipping design costs 2.11x the filter route.** A filter is only a hint, so a filter
+client must also fetch every raw tweak, 6.20 GB, more than the filters themselves, plus a
+full block on every match. Filters plus tweaks is 7.14 GB against the payload route's
+15.08 GB, and the payload route buys zero false positives and no block fetches while
+scanning. Those block fetches are not counted, so 2.11x is an upper bound on the payload
+route's disadvantage, not a measurement of it.
 
-1. **The 2024 answer:** a filter tailored to silent payments would be about
-   **6.1x smaller** than the stock BIP-158 filter wallets already download.
-   This was the exact number requested in the discussion and never delivered.
-2. **The 2026 tradeoff:** the server design that actually ships skips filters
-   and sends complete scanning data instead. Filters are only hints: a
-   filter-based wallet must also download the raw tweak values (6.2 GB over
-   this range, more than the filters themselves) and a full block for every
-   match. Compared end to end, the filter route costs about 7.1 GB against
-   the payload route's 15.1 GB, so the shipping design pays roughly **2.1x
-   the bandwidth for zero false positives and no block downloads while
-   scanning**. Neither side of that trade had ever been quantified.
+Even the heaviest option is 8 MB a day on a phone.
 
-For scale: even the heaviest option is 8 MB per day on a phone.
+## What filtering would save
 
-## Caveats, honestly
+Skipping outputs already spent takes the 15.08 GB restore to 3.10 GB. A 546 sat dust limit
+on top takes it to 2.29 GB. It saves a wallet following the chain nothing, because a new
+block's outputs are unspent by definition. Tables, both dust readings and the server-side
+cost: [FILTERS.md](./FILTERS.md).
 
-- Taproot-only filter sizes are computed, not served bytes: no such filter is
-  deployed anywhere. Item counts per block are exact; the byte estimate is
-  the validated formula.
-- Measured with no dust limit and no cut-through because v2 serves nothing
-  else: it accepts both request parameters and applies neither. What they
-  would save is in [FILTERS.md](./FILTERS.md).
-- BIP-158 figures are REST body bytes (~0.16% above the raw filter).
-- Full methodology and per-era breakdowns are in the collection scripts and
-  the delving thread context.
+## Limits
 
-## Files
+| | |
+|---|---|
+| Taproot-only filter bytes | Computed, not served: no such filter is deployed anywhere. Item counts per block are exact. The formula `N*(P+2)/8 + varint(N)`, P=19, was checked against real Golomb-Rice encodings of 19 blocks: aggregate -0.27%, worst single block -2.50%. See `gcs_validation.csv`. |
+| Dust and cut-through | Measured with neither, because BlindBit Oracle v2 applies neither at any setting: it accepts both request parameters and reads neither. Proven in upstream source and on the live server, see [PROVENANCE.md](./PROVENANCE.md). |
+| BIP-158 bytes | REST body bytes, a fixed 36 bytes per block above the raw filter (1 type byte, 32 blockhash, 3 compactsize). That is 0.16% of the range total and 1.41% of block 965,089's filter. |
+| Independent check | The tweak series was recomputed against the BIP-352 reference implementation, 529 blocks and 526,166 tweaks, zero disagreements, see [VERIFICATION.md](./VERIFICATION.md). The other three columns are single-source. |
 
-- `comparison.csv`: per block: height, BIP-158 bytes, taproot item count and
-  estimated bytes, v2 payload bytes, tweak count.
-- `bip158.csv`, `oracle.csv`: the raw collected series.
-- `gcs_validation.csv`: real filter encodings vs the size formula, 21 blocks.
-- `collect_filters.py`, `collect_oracle.py`, `validate_gcs.py`,
-  `summarize.py`: reproduce everything (needs a Core node with
-  blockfilterindex plus a BlindBit v2 oracle; loopback only).
-- `PROVENANCE.md`, `VERIFICATION.md`, `FILTERS.md`, and `verify/`: what produced
-  the data, an independent recomputation of it, and what filtering would save.
+## Reproduce
 
-Also here: `SPCOMMIT.md`, the normative format for the per-block index
-commitments the server publishes (the tamper-evident fingerprints), and
-`spcommit-test-vectors.json`, five real-data vectors so any implementation can
-verify byte-for-byte agreement.
+`summarize.py` rebuilds `comparison.csv` from `bip158.csv` and `oracle.csv` and prints every
+figure above. It needs no node. Collection needs Core with `blockfilterindex=1` and a
+BlindBit v2 oracle on loopback: `collect_filters.py`, `collect_oracle.py`,
+`validate_gcs.py`. The independent check is in `verify/`.
+
+Also here: `SPCOMMIT.md`, the normative format for the per-block index commitments the
+server publishes, with five real-data vectors in `spcommit-test-vectors.json`; and
+[LIGHT-CLIENT-PROTOCOL-DRAFT.md](./LIGHT-CLIENT-PROTOCOL-DRAFT.md), a pre-draft that merges
+the two existing spec efforts with what shipped. Neither is a measurement.
 
 Elsewhere: [blindbit-v1-shim](https://github.com/bitsagarob/blindbit-v1-shim) serves the
-removed v1 HTTP API in front of a v2 oracle, so the clients that were left behind by the
-rewrite keep working. It rebuilds the taproot-only filters measured above, since v2 no
-longer serves any.
+removed v1 HTTP API in front of a v2 oracle, and rebuilds the taproot-only filters measured
+above, since v2 serves none.
 
-Data: CC0. Scripts: MIT. From the operators of https://silentpayments.net,
-where the index behind these numbers publishes [tamper-evident fingerprints](https://njump.me/npub1wc5were3y63h4nwcckdrw72gceh4kgz8eg7fz0zrk2xufr4dx9xqlvmcx8)
-of everything it serves; plain-language story [here](https://bitsaga.be/insights/the-server-that-can-be-caught-lying).
+Data: CC0. Scripts: MIT. From the operators of https://silentpayments.net.
