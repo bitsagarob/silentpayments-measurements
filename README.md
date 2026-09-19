@@ -21,6 +21,14 @@ welcome, that is what it is for.
 with a number: no existing cryptography lets a server find your silent payments without
 learning they are yours, and the honest fix for an iPhone in a pocket needs none.
 
+**New (19 Sep 2026):** [FILTERS.md](./FILTERS.md) measures the two filters the caveat
+below used to hand-wave. Skipping already-spent outputs cuts a full restore from 15.08 GB
+to **3.10 GB**, and a 546 sat dust limit on top takes it to **2.29 GB**. It saves a wallet
+following the chain nothing. Computed twice by implementations sharing no code, one of
+which never used the indexer. Also new: [VERIFICATION.md](./VERIFICATION.md), the tweak
+series recomputed against the BIP-352 reference implementation, 526,166 tweaks, zero
+disagreements; and [PROVENANCE.md](./PROVENANCE.md), pinning what produced every figure.
+
 ## Results in one table
 
 | what the wallet downloads | whole range | average per block | per day, following the chain* |
@@ -54,8 +62,9 @@ For scale: even the heaviest option is 8 MB per day on a phone.
 - Taproot-only filter sizes are computed, not served bytes: no such filter is
   deployed anywhere. Item counts per block are exact; the byte estimate is
   the validated formula.
-- Measured at dust limit 0 with no cut-through, so the two shrinkable
-  mechanisms are shown at their upper bound.
+- Measured with no dust limit and no cut-through because v2 serves nothing
+  else: it accepts both request parameters and applies neither. What they
+  would save is in [FILTERS.md](./FILTERS.md).
 - BIP-158 figures are REST body bytes (~0.16% above the raw filter).
 - Full methodology and per-era breakdowns are in the collection scripts and
   the delving thread context.
@@ -69,6 +78,8 @@ For scale: even the heaviest option is 8 MB per day on a phone.
 - `collect_filters.py`, `collect_oracle.py`, `validate_gcs.py`,
   `summarize.py`: reproduce everything (needs a Core node with
   blockfilterindex plus a BlindBit v2 oracle; loopback only).
+- `PROVENANCE.md`, `VERIFICATION.md`, `FILTERS.md`, and `verify/`: what produced
+  the data, an independent recomputation of it, and what filtering would save.
 
 Also here: `SPCOMMIT.md`, the normative format for the per-block index
 commitments the server publishes (the tamper-evident fingerprints), and

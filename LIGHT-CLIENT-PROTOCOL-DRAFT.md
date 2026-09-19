@@ -135,7 +135,10 @@ wallets (BIP-37's false-positive rate proved it). This draft therefore makes the
 behaviour the **default and cheapest** path: full-block-on-match is normative, dust
 filtering defaults to off, and no request parameter narrows interest below a block (a
 dust limit narrows by value class, never by output identity, and remains a client
-fingerprint on the wire, which is why zero is the default).
+fingerprint on the wire, which is why zero is the default). The measurements now price
+that knob: a dust limit on its own removes only 9% of the payload at 546 sat and 32% at
+1000 sat, so the fingerprint is paid for very little. The large saving is cut-through,
+which costs no privacy at all.
 
 ### 3.5 Out of scope: the custodial shape
 
@@ -188,7 +191,7 @@ blocking gap for the profile, not for the protocol.
 The full-history cost comparison this draft inherits from the measurements: a complete
 filter stack (filters + raw tweaks) is ~7.1 GB; the tier-1 self-contained payload is
 ~15.1 GB, about 2.1x, in exchange for zero false positives and no per-match fetch
-against the indexer. Both are dust-limit-0, no-cut-through upper bounds.
+against the indexer. Both are dust-limit-0, no-cut-through: that is what v2 serves, not a choice. [FILTERS.md](./FILTERS.md) measures what filtering would save.
 
 ### Spent-output identifier: decision and rationale
 
@@ -347,7 +350,12 @@ already performs with full-data comparisons; digests make it cheap.
   is otherwise historical.
 - **Cake's `blockchain.tweaks.subscribe` dialect**: live, undocumented outside client
   source, carries no block hashes, always cut-through, no integrity story. Its users
-  deserve a documented migration path to a conforming tier.
+  deserve a documented migration path to a conforming tier. The integrity gap is fixable
+  and worth stating, because cut-through is the one filter that pays: pin it to fixed
+  checkpoint heights rather than to the live tip and the response becomes deterministic,
+  so it can carry its own commitment and be audited like an unfiltered one. Only the
+  client's ability to prove to itself that nothing was dropped is unrecoverable, and that
+  was never available.
 
 ## Appendix A: measured costs (from this repository, all 255,434 blocks, 709,656 to tip)
 
@@ -357,10 +365,15 @@ already performs with full-data comparisons; digests make it cheap.
 | Stock BIP-158 filters, full history | 5.78 GB |
 | Taproot-only filter, full history | 0.94 GB (~6.1x smaller; 3.2x at the inscription peak) |
 | Tier-1 self-contained payload, full history | 15.08 GB (~2.1x the complete filter stack, zero false positives) |
-| Full serving index on disk (v2, both dust modes) | ~109 GB |
+| Full serving index on disk | ~109 GB |
+| Same payload, already-spent outputs omitted | 3.10 GB (20.5%) |
+| Same, plus a 546 sat dust limit | 2.29 GB (15.2%) |
 
-All values dust-limit 0, no cut-through: upper bounds. Reproduction scripts in this
-repository.
+All values dust-limit 0, no cut-through, because v2 applies neither: it accepts both
+request parameters and ignores them, and its three `tweaks_*` configuration flags reach
+only the `/info` body. The filtered rows are from [FILTERS.md](./FILTERS.md), spentness
+pinned at height 967,618, and they apply to a restore, never to following the chain.
+Reproduction scripts in this repository.
 
 ## Appendix B: what this draft settled by adoption rather than argument
 
