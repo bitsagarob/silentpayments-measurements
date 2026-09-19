@@ -38,7 +38,7 @@ repository the binary was built in:
 | `bd17922` is an ancestor of `7317cd0` | yes, verified with `git merge-base --is-ancestor` |
 | Commits in `bd17922..7317cd0` | 2: `039fc5b` (chaininfo `warnings` JSON type), `7317cd0` (opt-in `include_input_only` on the HTTP `/full-block` route) |
 | Working tree at build time | `vcs.modified=true`, explained. The build writes its output binary `blindbit-oracle` into the repository root, and that path is absent from `.gitignore`, so the build's own artefact makes `git status --porcelain` non-empty and Go records the tree as modified. Reproduced on 2026-09-18: a pristine checkout of `7317cd0` builds with `vcs.modified=false`, and the same checkout with only that one untracked binary present builds with `vcs.modified=true`. |
-| Rebuild comparison | A clean rebuild of `7317cd0` (go1.27.0, same machine) has an identical module dependency list, identical build settings, and an identical symbol table (`nm`, zero differing lines) against the running binary. Sizes differ by 72 bytes, consistent with the embedded build path. This is strong evidence, not proof: a byte comparison would require rebuilding at the same absolute path. |
+| Rebuild comparison | **Byte identical.** Rebuilding `7317cd0` at the same absolute path with go1.27.0 reproduces the running binary exactly (`cmp`, no differing byte). The running binary therefore carries no uncommitted source change. |
 
 Vendored reference files, sha256, each byte identical to the same path under
 `bip-0352/` on `bitcoin/bips` master as fetched 2026-09-18:
@@ -174,7 +174,7 @@ None. Zero heights in either leg. No txids to report.
 | Bitcoin Core's own block and prevout data | not independently checked. Both implementations read the same node, so a fault in that node's block data would not be caught by this comparison. |
 | The `dustlimit` and `cut_through` request parameters | not independently tested here. The 529 block agreement is consistent with the claim in `PROVENANCE.md` that BlindBit Oracle v2 applies neither, but this check does not vary those parameters. |
 | The receiving and scanning side of BIP-352 | not checked. Only the tweak the index serves was compared, not output key derivation, label handling or spending. |
-| The exact source of the running BlindBit binary | partial. `vcs.modified=true` is accounted for by the build's own untracked output binary, and a clean rebuild of `7317cd0` matches the running binary on dependencies, build settings and symbol table. A byte-for-byte comparison was not performed. |
+| The exact source of the running BlindBit binary | covered. A same-path rebuild of `7317cd0` is byte identical to the running binary. |
 | Anything about a released or third party BlindBit build | not covered. The binary checked is the one running on this host. |
 
 ## Reproduce
