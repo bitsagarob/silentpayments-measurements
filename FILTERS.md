@@ -151,7 +151,7 @@ verification by the client, and checkpoint pinning preserves that guarantee in f
 | Item | Status |
 |---|---|
 | The eligible-transaction set | taken from the index by both implementations. Verified separately against the BIP-352 reference implementation on 529 blocks and 526,166 tweaks; see `VERIFICATION.md`. |
-| Stability of the cut-through figures | none. 85.2% spent is true at height 967,618 and grows. Re-pinning at 965,089 instead moves the cut-through payload by +0.74% at dust 0, +0.83% at 546, +2.80% at 1000. Never quote a cut-through figure without its pin. |
+| Stability of the cut-through figures | none. 85.2% spent is true at height 967,618 and grows. Re-pinning at 965,089 instead, measured under the same rule, moves the cut-through payload by **+0.71%** at dust 0, **+0.79%** at 546 and **+2.53%** at 1000, so 22.76% becomes 22.92%, 17.04% becomes 17.18% and 3.15% becomes 3.23%. Rows without cut-through are identical to the byte at either pin. Never quote a cut-through figure without its pin. |
 | A `dumptxoutset` snapshot | not used. Core RPC credentials were not reachable, so spentness was derived by parsing raw blocks instead. The pinned block-hash list is kept, so the derivation is repeatable. |
 | The gRPC wire path of implementation 1 | not exercised end to end. The filter arguments are proven to reach the database layer by a test that was deliberately broken twice to confirm it fails. |
 | Hash collisions in implementation 2's join | 96-bit keys, 1.75e9 lookups against 359M entries, about 1e-11. Zero duplicate outpoints were found. |
