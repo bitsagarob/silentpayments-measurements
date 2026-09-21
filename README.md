@@ -66,7 +66,8 @@ BlindBit v2 oracle on loopback: `collect_filters.py`, `collect_oracle.py`,
 `validate_gcs.py`. The independent check is in `verify/`.
 
 Also here: `SPCOMMIT.md`, the normative format for the per-block index commitments the
-server publishes, with five real-data vectors in `spcommit-test-vectors.json`; and
+server publishes, with `commitments.js` as its reference implementation and five real-data
+vectors in `spcommit-test-vectors.json`; and
 [LIGHT-CLIENT-PROTOCOL-DRAFT.md](./LIGHT-CLIENT-PROTOCOL-DRAFT.md), a pre-draft that merges
 the two existing spec efforts with what shipped. Neither is a measurement.
 

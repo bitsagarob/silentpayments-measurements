@@ -116,7 +116,7 @@ in both content and order.
 
 ## Checkpointing
 
-Heads are published to public nostr relays by `api/oracle-checkpoint.js` as a
+Heads are published to public nostr relays by the operator's checkpoint publisher, which is not part of this specification, as a
 kind 1 note with tags:
 
     ["t", "silentpayments-tweak-index"]
