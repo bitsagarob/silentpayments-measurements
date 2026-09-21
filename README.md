@@ -19,7 +19,7 @@ Provenance: [PROVENANCE.md](./PROVENANCE.md).
 |---|---|---|
 | BIP-158 basic filter, what light wallets use today | 5.78 GB | 2.84 MB |
 | Taproot-only filter, proposed 2024, never built | 0.33 GB | 0.14 MB |
-| Raw tweaks, 33 bytes per eligible transaction | 6.20 GB | 4.87 MB |
+| Raw tweaks, 33 bytes per eligible transaction | 6.20 GB | 3.40 MB |
 | BlindBit v2 scanning payload, what ships | 15.08 GB | 8.04 MB |
 
 Per day is 144 blocks at blocks 900,000 to 965,089 averages.
@@ -43,9 +43,10 @@ Even the heaviest option is 8 MB a day on a phone.
 ## What filtering would save
 
 Skipping transactions whose outputs are all spent takes the 15.08 GB restore to 3.43 GB. A
-546 sat dust limit on top takes it to 2.57 GB. It saves a wallet following the chain nothing, because a new
-block's outputs are unspent by definition. Tables, both dust readings and the server-side
-cost: [FILTERS.md](./FILTERS.md).
+546 sat dust limit on top takes it to 2.57 GB. It saves a wallet following the chain
+nothing, because a new block's outputs are unspent by definition. A filter must drop a whole
+transaction or none of it, or a scanner stops at the first output it cannot match. Full
+tables and the server-side cost: [FILTERS.md](./FILTERS.md).
 
 ## Limits
 
@@ -53,7 +54,7 @@ cost: [FILTERS.md](./FILTERS.md).
 |---|---|
 | Taproot-only filter bytes | **Encoded, not modelled.** No such filter is deployed anywhere, so every block's filter was built and weighed: real siphash-2-4, real Golomb-Rice, P=19, M=784931. Two independent C implementations, written separately, agree on all 255,434 blocks with zero differing bytes, and each was first proved byte-for-byte identical to Bitcoin Core's own basic filters (11,275 and 1,283 blocks, zero mismatches). Per-block results in `taproot_filter.csv`. |
 | Duplicate keys | BIP-158 encodes an element **set**, which is what Core does and what byte-for-byte agreement with Core requires. Over this range 359,001,723 eligible taproot outputs carry only 124,299,689 distinct x-only keys, 65.4% repeats, so the filter has 124.3M elements. Keeping duplicates instead would give 0.958 GB and 6.02x. A wallet matches on key membership, so a repeated key adds nothing. |
-| Dust and cut-through | Measured with neither, because BlindBit Oracle v2 applies neither at any setting: it accepts both request parameters and reads neither. Proven in upstream source and on the live server, see [PROVENANCE.md](./PROVENANCE.md). |
+| Dust and cut-through | Measured with neither, because upstream BlindBit Oracle v2 applies neither at any setting: it accepts both request parameters and reads neither. Proven in upstream source, see [PROVENANCE.md](./PROVENANCE.md). The server these figures came from now implements both ([blindbit-oracle#61](https://github.com/setavenger/blindbit-oracle/pull/61)), which does not change any figure in the results table above. |
 | BIP-158 bytes | REST body bytes: 1 type byte, 32 blockhash, then a compactsize length. Usually 36 bytes of framing, but 34 on 1,172 small-filter blocks and 38 on block 826,052. 0.159% of the range total, 9,193,282 bytes. |
 | Independent check | The tweak series was recomputed against the BIP-352 reference implementation, 529 blocks and 526,166 tweaks, zero disagreements, see [VERIFICATION.md](./VERIFICATION.md). The other three columns are single-source. |
 

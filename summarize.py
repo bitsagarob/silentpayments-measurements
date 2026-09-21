@@ -62,12 +62,13 @@ def main():
               f"{tap/b158:>8.4f} {v2/b158:>7.4f} {v2/tap:>7.2f} {tw/nb:>10.1f}")
     nb, b158, tap, v2, tw, tn = agg(START, END)
     G = 1e9
-    print(f"\nTotals: bip158={b158/G:.3f} GB  taproot_est={tap/G:.3f} GB  "
+    print(f"\nTotals: bip158={b158/G:.3f} GB  taproot={tap/G:.3f} GB  rawtweaks={tw*33/G:.3f} GB  "
           f"v2={v2/G:.3f} GB  tweaks={tw}  taproot_items={tn}")
     # tip-following daily budget at 900k-965k averages
-    nb9, b9, t9, v9, _, _ = agg(900000, 965089)
+    nb9, b9, t9, v9, w9, _ = agg(900000, 965089)
     print(f"Daily (144 blk, 900k-965k era): bip158={144*b9/nb9/1e6:.2f} MB  "
-          f"taproot={144*t9/nb9/1e6:.3f} MB  v2={144*v9/nb9/1e6:.2f} MB")
+          f"taproot={144*t9/nb9/1e6:.3f} MB  rawtweaks={144*w9*33/nb9/1e6:.2f} MB  "
+          f"v2={144*v9/nb9/1e6:.2f} MB")
 
 
 if __name__ == "__main__":
