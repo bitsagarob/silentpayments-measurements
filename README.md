@@ -42,8 +42,8 @@ Even the heaviest option is 8 MB a day on a phone.
 
 ## What filtering would save
 
-Skipping outputs already spent takes the 15.08 GB restore to 3.10 GB. A 546 sat dust limit
-on top takes it to 2.29 GB. It saves a wallet following the chain nothing, because a new
+Skipping transactions whose outputs are all spent takes the 15.08 GB restore to 3.43 GB. A
+546 sat dust limit on top takes it to 2.57 GB. It saves a wallet following the chain nothing, because a new
 block's outputs are unspent by definition. Tables, both dust readings and the server-side
 cost: [FILTERS.md](./FILTERS.md).
 

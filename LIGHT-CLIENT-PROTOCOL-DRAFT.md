@@ -64,7 +64,9 @@ provider without requiring architectural changes."
 - **Light client**: a wallet that scans via an indexer instead of its own node, and that
   reveals to the indexer nothing more specific than interest in whole blocks.
 - **Cut-through**: omitting or deleting tweaks of transactions whose taproot outputs are
-  all spent. **Measured at 79.46% of the payload** over blocks 709,656 to 965,089, spentness
+  all spent, never single outputs: BIP-352 scanning stops at the first k it cannot match, so
+  withholding one output of a transaction hides every later output of it. **Measured at
+  77.24% of the payload** over blocks 709,656 to 965,089, spentness
   pinned at height 967,618 ([FILTERS.md](./FILTERS.md)); setavenger's 2024 analysis said 38%,
   and the benefit grows with chain age because a coin can only be skipped once it is spent.
   Costs historical rescan completeness: a cut-through restore recovers the coins a wallet
@@ -141,7 +143,7 @@ dust limit narrows by value class, never by output identity, and remains a clien
 fingerprint on the wire, which is why zero is the default). The measurements now price
 that knob: reading dust per transaction, it removes 9.16% of the payload at 546 sat and
 29.31% at 1000 sat, so the fingerprint is paid for very little. The large saving is
-cut-through, at 79.46%, and it narrows nothing about the client, so it is the one bandwidth
+cut-through, at 77.24%, and it narrows nothing about the client, so it is the one bandwidth
 knob in this protocol that costs no privacy.
 
 ### 3.5 Out of scope: the custodial shape
@@ -375,8 +377,8 @@ already performs with full-data comparisons; digests make it cheap.
 | Taproot-only filter, full history | 0.33 GB (17.63x smaller; 7.65x at the inscription peak, 23.61x over the last 10,000 blocks). Encoded per block, not modelled |
 | Tier-1 self-contained payload, full history | 15.08 GB (2.31x the complete filter stack of 6.53 GB, zero false positives) |
 | Full serving index on disk | ~109 GB |
-| Same payload, already-spent outputs omitted | 3.10 GB (20.5%) |
-| Same, plus a 546 sat dust limit | 2.29 GB (15.2%) |
+| Same payload, fully-spent transactions omitted | 3.43 GB (22.8%) |
+| Same, plus a 546 sat dust limit | 2.57 GB (17.0%) |
 
 All values dust-limit 0, no cut-through, because v2 applies neither: it accepts both
 request parameters and ignores them, and its three `tweaks_*` configuration flags reach
