@@ -204,6 +204,27 @@ payload is 15.08 GB, 2.31x, in exchange for zero false positives and no per-matc
 against the indexer. Note where the weight sits: the tweaks are nineteen times the
 filters, so the filter profile is not what makes that route cheap. Both are dust-limit-0, no-cut-through: that is what v2 serves, not a choice. [FILTERS.md](./FILTERS.md) measures what filtering would save.
 
+### Tier 2: the target design
+
+Tiers 0 and 1 describe what ships. They are the interop floor, not the destination. The
+destination this draft targets is Ruben Somsen's optimised light client model
+(https://gist.github.com/RubenSomsen/a0ebca199d845c90acea061eba9888d1), which replaces
+both the flat tweak list and the 8-byte prefix list with three pieces:
+
+- tweaks grouped with their outputs, ordered by output count for encoding efficiency;
+- a per-tweak output filter of the first `n` bits of each hashed output, salted with the
+  block hash, with `n = log2(block_size_in_bits * label_count)` and a default
+  `label_count` of 100, so roughly 31 bits;
+- a per-block input filter over 32-bit taproot outpoint IDs, compressed to about 6 bits
+  per input, reported as ~3x smaller than BIP-158 with no false positives.
+
+Cut-through and address-reuse removal are part of that model rather than bolted on. Its
+cut-through estimate of ~80% and this repository's independently measured 77.24%
+(spentness pinned at height 967,618) agree.
+
+A tier-1 server is conforming. This section exists so that nothing in tiers 0 and 1 is
+specified in a way that forecloses this shape.
+
 ### Spent-output identifier: decision and rationale
 
 Three shipped answers exist: salted outpoint hashes `sha256(outpoint || block_hash)[:8]`
@@ -213,6 +234,8 @@ adopts **v2's raw 8-byte output-key prefixes** as canonical: it is what live ser
 serve and live clients consume, it needs no filter machinery, and the data it reveals
 (which outputs a block spends) is public chain data in any case. The salted design's
 marginal obfuscation does not survive the fact that spentness is globally recomputable.
+That is about spent-output identifiers, not about the tier-2 output filter's block-hash
+salt, which is there to prevent forgery rather than to obfuscate.
 Servers MAY additionally serve the salted form for v1 compatibility; new clients SHOULD
 NOT depend on it. If the working group overrules this, the salt's serialization needs
 pinning; the 2024 text left the block-hash byte order in the preimage ambiguous.
@@ -397,3 +420,6 @@ the capability-discovery idea (index-server spec); the block-granular privacy in
 paid-scriptPubKey tracking, and the single-instance caveat (light-client spec); the
 tier-1 wire shapes (shipped BlindBit v2); named capability flags over scalar versions
 (Electrum's forks as the cautionary tale); the two-implementation interop gate (BOLTs).
+
+The target data model (section 4, tier 2) is Ruben Somsen's, adopted here rather than
+re-derived.
